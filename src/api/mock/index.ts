@@ -16,7 +16,7 @@ export type { Review } from './reviews';
 export { warnings, getWarnings, getWarningById, getWarningsByBranchId } from './warnings';
 export type { Warning, WarningType, WarningLevel, WarningStatus, WarningApproval } from './warnings';
 
-export { schedules, getScheduleByBranchId } from './schedule';
+export { schedules, getScheduleByBranchId, getScheduleByBranchAndWeek, updateScheduleByBranchAndWeek, getPredictedFlow } from './schedule';
 export type { Schedule, ScheduleTeller, ShiftType } from './schedule';
 
 export { reports, getReports, getReportById } from './reports';

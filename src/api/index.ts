@@ -22,6 +22,9 @@ import {
   getWarningById,
   getWarningsByBranchId,
   getScheduleByBranchId,
+  getScheduleByBranchAndWeek,
+  updateScheduleByBranchAndWeek,
+  getPredictedFlow,
   getReports as getMockReports,
   getReportById,
 } from './mock';
@@ -38,6 +41,7 @@ import type {
   WarningApproval,
   Schedule,
   ScheduleTeller,
+  ShiftType,
   Report,
   ReportScope,
 } from './mock';
@@ -143,13 +147,119 @@ export const approveWarning = (
   return delay(warning);
 };
 
-export const uploadSchedule = (branchId: string, file: File, weekStart?: string): Promise<{ success: boolean; message: string }> => {
-  return delay({ success: true, message: '排班表上传成功' });
+export const uploadSchedule = async (
+  branchId: string,
+  file: File,
+  weekStart?: string
+): Promise<{ success: boolean; message: string }> => {
+  const actualWeekStart = weekStart || new Date().toISOString().split('T')[0];
+  try {
+    const XLSX = await import('xlsx');
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer);
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json<any>(firstSheet, { defval: '' });
+
+    if (rows.length === 0) {
+      return delay({ success: false, message: 'Excel 文件为空' });
+    }
+
+    const tellerMap = new Map<string, { name: string; shifts: (ShiftType | null)[]; windows: (number | null)[] }>();
+
+    rows.forEach((row, rowIdx) => {
+      const name = String(row['柜员'] || row['姓名'] || row['name'] || row['teller'] || '').trim();
+      if (!name) return;
+
+      if (!tellerMap.has(name)) {
+        tellerMap.set(name, { name, shifts: Array(7).fill(null), windows: Array(7).fill(null) });
+      }
+      const teller = tellerMap.get(name)!;
+
+      const dayKeys = [
+        ['周一', '星期一', 'mon', 'monday', 0],
+        ['周二', '星期二', 'tue', 'tuesday', 1],
+        ['周三', '星期三', 'wed', 'wednesday', 2],
+        ['周四', '星期四', 'thu', 'thursday', 3],
+        ['周五', '星期五', 'fri', 'friday', 4],
+        ['周六', '星期六', 'sat', 'saturday', 5],
+        ['周日', '星期日', '星期天', 'sun', 'sunday', 6],
+      ] as const;
+
+      dayKeys.forEach(([k1, k2, k3, k4, dayIdxRaw]) => {
+        const dayIdx = Number(dayIdxRaw);
+        const cellVal =
+          row[k1] !== undefined ? row[k1] :
+          row[k2] !== undefined ? row[k2] :
+          row[k3] !== undefined ? row[k3] :
+          row[k4] !== undefined ? row[k4] : undefined;
+
+        if (cellVal !== undefined && cellVal !== '') {
+          const strVal = String(cellVal).trim();
+          let shift: ShiftType = 'full';
+          if (strVal.includes('早') || strVal.toLowerCase().includes('morning')) shift = 'morning';
+          else if (strVal.includes('午') || strVal.includes('下') || strVal.toLowerCase().includes('afternoon')) shift = 'afternoon';
+          else if (strVal.includes('全') || strVal.toLowerCase().includes('full')) shift = 'full';
+          else if (strVal === '休' || strVal.toLowerCase() === 'off' || strVal === '') return;
+
+          teller.shifts[dayIdx] = shift;
+
+          const winKey1 = `窗口${dayIdx + 1}`;
+          const winKey2 = `${k1}窗口`;
+          const winVal =
+            row[winKey1] !== undefined ? row[winKey1] :
+            row[winKey2] !== undefined ? row[winKey2] : null;
+          if (winVal !== null && winVal !== '' && !isNaN(Number(winVal))) {
+            teller.windows[dayIdx] = Number(winVal);
+          }
+        }
+      });
+    });
+
+    const weekStartDate = new Date(actualWeekStart);
+    const newSchedules: Schedule[] = [];
+    const tellerArr = Array.from(tellerMap.values());
+
+    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+      const d = new Date(weekStartDate);
+      d.setDate(weekStartDate.getDate() + dayIdx);
+      const dateStr = d.toISOString().split('T')[0];
+
+      const dayTellers: ScheduleTeller[] = [];
+      let winCounter = 1;
+
+      tellerArr.forEach((t, tellerIdx) => {
+        const shift = t.shifts[dayIdx];
+        if (!shift) return;
+        const windowNum = t.windows[dayIdx] || winCounter++;
+        dayTellers.push({
+          tellerId: `${branchId}-t-${tellerIdx + 1}`,
+          tellerName: t.name,
+          shift,
+          windowNumber: windowNum,
+        });
+      });
+
+      newSchedules.push({
+        id: `s-${branchId}-${dateStr}`,
+        branchId,
+        date: dateStr,
+        tellers: dayTellers,
+      });
+    }
+
+    updateScheduleByBranchAndWeek(branchId, actualWeekStart, newSchedules);
+    return delay({ success: true, message: `排班表上传成功，共 ${tellerArr.length} 位柜员` });
+  } catch (e) {
+    console.error('Parse excel error', e);
+    return delay({ success: false, message: 'Excel 解析失败，请检查文件格式' });
+  }
 };
 
 export const getSchedule = (branchId: string, weekStart?: string): Promise<Schedule[]> => {
-  const data = getScheduleByBranchId(branchId);
-  return delay(data);
+  if (weekStart) {
+    return delay(getScheduleByBranchAndWeek(branchId, weekStart));
+  }
+  return delay(getScheduleByBranchId(branchId));
 };
 
 export interface ScheduleGapResult {
@@ -160,25 +270,43 @@ export interface ScheduleGapResult {
   needWarning: boolean;
   predictedFlow: number;
   perWindowCapacity: number;
+  dailyBreakdown: { date: string; available: number; required: number }[];
 }
 
 export const checkScheduleGap = (branchId: string, weekStart?: string): Promise<ScheduleGapResult> => {
-  const branch = getBranchById(branchId);
-  const windows = branch?.windowCount || 5;
-  const predictedFlow = Math.floor(80 + Math.random() * 120);
+  const actualWeekStart = weekStart || new Date().toISOString().split('T')[0];
+  const weekSchedules = getScheduleByBranchAndWeek(branchId, actualWeekStart);
+  const predictedFlow = getPredictedFlow(branchId, actualWeekStart);
   const perWindow = 40;
-  const required = Math.ceil(predictedFlow / perWindow);
-  const gap = required - windows;
-  const gapPercent = (gap / required) * 100;
-  
+  const requiredPerDay = Math.ceil(predictedFlow / perWindow);
+
+  let totalAvailable = 0;
+  const dailyBreakdown: { date: string; available: number; required: number }[] = [];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(actualWeekStart);
+    d.setDate(d.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    const daySchedule = weekSchedules.find(s => s.date === dateStr);
+    const available = daySchedule ? daySchedule.tellers.length : 0;
+    totalAvailable += available;
+    dailyBreakdown.push({ date: dateStr, available, required: requiredPerDay });
+  }
+
+  const avgAvailable = weekSchedules.length > 0 ? totalAvailable / weekSchedules.length : 0;
+  const avgRequired = requiredPerDay;
+  const gap = Math.max(0, avgRequired - avgAvailable);
+  const gapPercent = avgRequired > 0 ? (gap / avgRequired) * 100 : 0;
+
   return delay({
-    availableWindows: windows,
-    requiredWindows: required,
-    gap: Math.max(0, gap),
-    gapPercentage: Math.max(0, gapPercent),
+    availableWindows: Math.round(avgAvailable),
+    requiredWindows: avgRequired,
+    gap: Math.round(gap * 10) / 10,
+    gapPercentage: Math.round(gapPercent * 10) / 10,
     needWarning: gapPercent > 20,
     predictedFlow,
     perWindowCapacity: perWindow,
+    dailyBreakdown,
   });
 };
 

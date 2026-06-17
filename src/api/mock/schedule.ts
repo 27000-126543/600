@@ -28,6 +28,24 @@ function generateTellerName(): string {
   return getRandomItem(firstNames) + getRandomItem(lastNames);
 }
 
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+function seededRandom(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
 const now = dayjs();
 const startOfWeek = now.startOf('week');
 
@@ -46,10 +64,10 @@ scheduleBranches.forEach(branch => {
     const tellers: ScheduleTeller[] = [];
 
     for (let t = 0; t < tellerCount; t++) {
-      const shifts: ShiftType[] = ['morning', 'afternoon', 'full'];
+      const shiftsArr: ShiftType[] = ['morning', 'afternoon', 'full'];
       const shift = isWeekend
         ? (Math.random() > 0.5 ? 'full' as ShiftType : getRandomItem(['morning', 'afternoon'] as ShiftType[]))
-        : shifts[Math.floor(Math.random() * 3)];
+        : shiftsArr[Math.floor(Math.random() * 3)];
       const windowNumber = t + 1;
 
       tellers.push({
@@ -73,3 +91,36 @@ scheduleBranches.forEach(branch => {
 
 export const getScheduleByBranchId = (branchId: string): Schedule[] =>
   schedules.filter(s => s.branchId === branchId);
+
+export const getScheduleByBranchAndWeek = (branchId: string, weekStart: string): Schedule[] => {
+  const start = dayjs(weekStart);
+  const weekDates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    weekDates.push(start.add(i, 'day').format('YYYY-MM-DD'));
+  }
+  return schedules.filter(s => s.branchId === branchId && weekDates.includes(s.date));
+};
+
+export const updateScheduleByBranchAndWeek = (
+  branchId: string,
+  weekStart: string,
+  newSchedules: Schedule[]
+): void => {
+  const start = dayjs(weekStart);
+  const weekDates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    weekDates.push(start.add(i, 'day').format('YYYY-MM-DD'));
+  }
+  for (let i = schedules.length - 1; i >= 0; i--) {
+    if (schedules[i].branchId === branchId && weekDates.includes(schedules[i].date)) {
+      schedules.splice(i, 1);
+    }
+  }
+  schedules.push(...newSchedules);
+};
+
+export const getPredictedFlow = (branchId: string, weekStart: string): number => {
+  const seed = hashString(`${branchId}-${weekStart}`);
+  const rand = seededRandom(seed);
+  return Math.floor(80 + rand() * 120);
+};
