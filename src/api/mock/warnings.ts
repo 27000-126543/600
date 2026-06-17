@@ -10,6 +10,7 @@ export interface WarningApproval {
   approver: string;
   comment: string;
   approvedAt: string;
+  action: 'approve' | 'reject';
 }
 
 export interface Warning {
@@ -97,6 +98,7 @@ export const warnings: Warning[] = [
     approvals: [
       { level: 1, approver: generateName(), comment: '情况属实', approvedAt: now.subtract(20, 'hour').toISOString() },
       { level: 2, approver: generateName(), comment: '同意增开窗口', approvedAt: now.subtract(18, 'hour').toISOString() },
+      { level: 3, approver: generateName(), comment: '批准执行', approvedAt: now.subtract(16, 'hour').toISOString() },
     ],
   },
   {
@@ -107,10 +109,12 @@ export const warnings: Warning[] = [
     level: 'low',
     triggeredAt: now.subtract(2, 'day').toISOString(),
     description: '近一周投诉量明显上升，需关注服务质量',
-    currentLevel: 1,
-    status: 'completed',
+    currentLevel: 4,
+    status: 'approved',
     approvals: [
       { level: 1, approver: generateName(), comment: '已处理', approvedAt: now.subtract(1, 'day').toISOString() },
+      { level: 2, approver: generateName(), comment: '确认整改', approvedAt: now.subtract(1, 'day').add(2, 'hour').toISOString() },
+      { level: 3, approver: generateName(), comment: '同意结案', approvedAt: now.subtract(1, 'day').add(4, 'hour').toISOString() },
     ],
   },
   {
@@ -121,10 +125,12 @@ export const warnings: Warning[] = [
     level: 'low',
     triggeredAt: now.subtract(3, 'day').toISOString(),
     description: '窗口利用率偏低导致等候时间延长',
-    currentLevel: 1,
-    status: 'completed',
+    currentLevel: 4,
+    status: 'approved',
     approvals: [
       { level: 1, approver: generateName(), comment: '已优化排班', approvedAt: now.subtract(2, 'day').toISOString() },
+      { level: 2, approver: generateName(), comment: '确认', approvedAt: now.subtract(2, 'day').add(1, 'hour').toISOString() },
+      { level: 3, approver: generateName(), comment: '通过', approvedAt: now.subtract(2, 'day').add(3, 'hour').toISOString() },
     ],
   },
   {
@@ -147,7 +153,7 @@ export const warnings: Warning[] = [
     level: 'high',
     triggeredAt: now.subtract(6, 'hour').toISOString(),
     description: '午间时段排队积压，等候时间超过30分钟',
-    currentLevel: 1,
+    currentLevel: 2,
     status: 'rejected',
     approvals: [
       { level: 1, approver: generateName(), comment: '数据异常，暂不处理', approvedAt: now.subtract(5, 'hour').toISOString() },
@@ -165,7 +171,7 @@ export const warnings: Warning[] = [
     status: 'pending',
     approvals: [
       { level: 1, approver: generateName(), comment: '确认问题存在', approvedAt: now.subtract(2, 'day').toISOString() },
-      { level: 2, approver: generateName(), comment: '同意整改方案', approvedAt: now.subtract(2, 'day').toISOString() },
+      { level: 2, approver: generateName(), comment: '同意整改方案', approvedAt: now.subtract(2, 'day').add(3, 'hour').toISOString() },
     ],
   },
   {
@@ -177,10 +183,11 @@ export const warnings: Warning[] = [
     triggeredAt: now.subtract(4, 'day').toISOString(),
     description: '高峰期排队人数过多，客户等候时间异常',
     currentLevel: 4,
-    status: 'completed',
+    status: 'approved',
     approvals: [
       { level: 1, approver: generateName(), comment: '已安排增援', approvedAt: now.subtract(3, 'day').toISOString() },
       { level: 2, approver: generateName(), comment: '整改完成', approvedAt: now.subtract(2, 'day').toISOString() },
+      { level: 3, approver: generateName(), comment: '确认通过', approvedAt: now.subtract(2, 'day').add(2, 'hour').toISOString() },
     ],
   },
   {
@@ -257,10 +264,12 @@ export const warnings: Warning[] = [
     level: 'low',
     triggeredAt: now.subtract(6, 'day').toISOString(),
     description: '午间时段排队积压，等候时间超过30分钟',
-    currentLevel: 1,
-    status: 'completed',
+    currentLevel: 4,
+    status: 'approved',
     approvals: [
       { level: 1, approver: generateName(), comment: '已调整午间排班', approvedAt: now.subtract(5, 'day').toISOString() },
+      { level: 2, approver: generateName(), comment: '确认', approvedAt: now.subtract(5, 'day').add(2, 'hour').toISOString() },
+      { level: 3, approver: generateName(), comment: '通过', approvedAt: now.subtract(5, 'day').add(4, 'hour').toISOString() },
     ],
   },
   {

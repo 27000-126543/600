@@ -136,11 +136,12 @@ export const approveWarning = (
   });
   if (action === 'reject') {
     warning.status = 'rejected';
-  } else if (warning.currentLevel <= 1) {
+    warning.currentLevel = level;
+  } else if (level === 1) {
     warning.currentLevel = 2;
-  } else if (warning.currentLevel <= 2) {
+  } else if (level === 2) {
     warning.currentLevel = 3;
-  } else if (warning.currentLevel <= 3) {
+  } else if (level === 3) {
     warning.status = 'approved';
     warning.currentLevel = 4;
   }

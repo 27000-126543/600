@@ -277,7 +277,13 @@ export default function WarningCenterPage() {
                   <p className="text-gray-600 text-sm mb-3">{warning.description}</p>
                   <div className="flex items-center gap-6 text-sm text-gray-400">
                     <span>触发时间：{formatDate(warning.triggeredAt as any)}</span>
-                    <span>当前审批：第{warning.currentLevel}级</span>
+                    {warning.status === 'rejected' ? (
+                      <span>第{warning.currentLevel}级驳回</span>
+                    ) : warning.status === 'approved' ? (
+                      <span>三级审批已通过</span>
+                    ) : (
+                      <span>当前审批：第{warning.currentLevel}级</span>
+                    )}
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />

@@ -16,18 +16,32 @@ const levelLabels = ['', '支行行长', '分行管理员', '总行管理员'];
 export default function ApprovalFlow({ currentLevel, status, approvals, onApprove, onReject }: ApprovalFlowProps) {
   const [comment, setComment] = useState('');
 
-  const getApprovalStatus = (level: number) => {
+  const getApprovalStatus = (level: number): 'approved' | 'rejected' | 'pending_active' | 'pending_idle' => {
     const record = approvals.find((a) => a.level === level);
-    if (!record) return 'pending';
-    if (status === 'approved' && level <= 3) return 'approved';
-    if (status === 'rejected') return 'rejected';
-    return 'pending';
+
+    if (status === 'rejected') {
+      if (record) return 'rejected';
+      return 'pending_idle';
+    }
+
+    if (record) return 'approved';
+
+    if (status === 'pending' && level === currentLevel) {
+      return 'pending_active';
+    }
+
+    if (status === 'approved' || status === 'completed') {
+      return 'approved';
+    }
+
+    return 'pending_idle';
   };
 
   const canApproveCurrentLevel = () => {
     if (status !== 'pending') return false;
     if (currentLevel > 3) return false;
-    return approvals.findIndex(a => a.level === currentLevel) === -1;
+    const hasRecord = approvals.some(a => a.level === currentLevel);
+    return !hasRecord;
   };
 
   const handleApprove = () => {
@@ -40,39 +54,40 @@ export default function ApprovalFlow({ currentLevel, status, approvals, onApprov
     setComment('');
   };
 
+  const getConnectorColor = (level: number) => {
+    const s = getApprovalStatus(level);
+    if (s === 'approved') return 'bg-green-500';
+    if (s === 'rejected') return 'bg-red-400';
+    return 'bg-gray-200';
+  };
+
   return (
     <div className="space-y-0">
       {[1, 2, 3].map((level, index) => {
         const approvalStatus = getApprovalStatus(level);
-        const isCurrent = level === currentLevel && status === 'pending';
         const record = approvals.find((a) => a.level === level);
+
+        const circleClass = cn(
+          'flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all',
+          approvalStatus === 'approved' && 'border-green-500 bg-green-500 text-white',
+          approvalStatus === 'rejected' && 'border-red-500 bg-red-500 text-white',
+          approvalStatus === 'pending_active' && 'border-primary-500 bg-primary-50 text-primary-600',
+          approvalStatus === 'pending_idle' && 'border-gray-300 bg-gray-50 text-gray-400',
+        );
 
         return (
           <div key={level} className="flex">
             <div className="flex flex-col items-center">
-              <div
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all',
-                  approvalStatus === 'approved' && 'border-green-500 bg-green-500 text-white',
-                  approvalStatus === 'rejected' && 'border-red-500 bg-red-500 text-white',
-                  approvalStatus === 'pending' && isCurrent && 'border-primary-500 bg-primary-50 text-primary-600',
-                  approvalStatus === 'pending' && !isCurrent && 'border-gray-300 bg-gray-50 text-gray-400',
-                )}
-              >
+              <div className={circleClass}>
                 {approvalStatus === 'approved' ? <Check className="h-5 w-5" /> : approvalStatus === 'rejected' ? <X className="h-5 w-5" /> : level}
               </div>
               {index < 2 && (
-                <div
-                  className={cn(
-                    'h-12 w-0.5',
-                    approvalStatus === 'approved' ? 'bg-green-500' : 'bg-gray-200',
-                  )}
-                />
+                <div className={cn('h-12 w-0.5', getConnectorColor(level))} />
               )}
             </div>
             <div className="ml-4 flex-1 pb-6">
               <div className="flex items-center gap-2">
-                <span className={cn('text-sm font-medium', isCurrent ? 'text-primary-600' : 'text-gray-700')}>
+                <span className={cn('text-sm font-medium', approvalStatus === 'pending_active' ? 'text-primary-600' : 'text-gray-700')}>
                   {levelLabels[level]}
                 </span>
                 {approvalStatus === 'approved' && (
@@ -81,10 +96,10 @@ export default function ApprovalFlow({ currentLevel, status, approvals, onApprov
                 {approvalStatus === 'rejected' && (
                   <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">已驳回</span>
                 )}
-                {approvalStatus === 'pending' && isCurrent && (
+                {approvalStatus === 'pending_active' && (
                   <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-600">待审批</span>
                 )}
-                {approvalStatus === 'pending' && !isCurrent && (
+                {approvalStatus === 'pending_idle' && (
                   <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-400">待审批</span>
                 )}
               </div>

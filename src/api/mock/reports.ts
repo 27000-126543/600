@@ -66,7 +66,15 @@ function seeded(seed: number): () => number {
   };
 }
 
-const now = dayjs();
+function getISOWeek(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+const now = new Date();
 
 function generateWaitTimeAnalysis(seed: number, weekStart: string): WaitTimeAnalysis {
   const rand = seeded(seed);
@@ -141,6 +149,26 @@ function generateSummary(scopeName: string, weekStart: string, weekEnd: string, 
   return `${scopeName}${weekStart.slice(5)}至${weekEnd.slice(5)}运营情况：平均等候时长${wt.avgWaitTime}分钟，${wt.wowChange >= 0 ? '环比上升' : '环比下降'}${Math.abs(wt.wowChange)}%；本周投诉以「${topComplaint?.type || '其他'}」为主，占比${topComplaint?.percentage || 0}%；设备整体运行平稳，建议按推荐方案持续优化。`;
 }
 
+function getMonday(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function formatDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+function formatDateCN(d: Date): string {
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
 function generateWeeklyReport(
   id: string,
   scope: ReportScope,
@@ -148,12 +176,16 @@ function generateWeeklyReport(
   scopeName: string,
   weekOffset: number
 ): Report {
-  const startOfThisWeek = now.startOf('week').add(1, 'day');
-  const weekStart = startOfThisWeek.subtract(weekOffset, 'week');
-  const weekEnd = weekStart.add(6, 'day');
-  const weekStartStr = weekStart.format('YYYY-MM-DD');
-  const weekEndStr = weekEnd.format('YYYY-MM-DD');
-  const period = `${weekStart.format('YYYY年MM月DD日')} - ${weekEnd.format('MM月DD日')}`;
+  const monday = getMonday(now);
+  const weekStartDate = new Date(monday);
+  weekStartDate.setDate(monday.getDate() - weekOffset * 7);
+  const weekEndDate = new Date(weekStartDate);
+  weekEndDate.setDate(weekStartDate.getDate() + 6);
+
+  const weekStartStr = formatDateStr(weekStartDate);
+  const weekEndStr = formatDateStr(weekEndDate);
+  const period = `${formatDateCN(weekStartDate)} - ${weekEndDate.getMonth() + 1}月${weekEndDate.getDate()}日`;
+  const weekNum = getISOWeek(weekStartDate);
 
   const seed = hashStr(`${id}-${scopeId}-${weekStartStr}`);
   const waitTimeAnalysis = generateWaitTimeAnalysis(seed, weekStartStr);
@@ -172,25 +204,23 @@ function generateWeeklyReport(
   };
   content.summary = generateSummary(scopeName, weekStartStr, weekEndStr, content);
 
+  const genDate = new Date(weekEndDate);
+  genDate.setDate(genDate.getDate() + 1);
+  genDate.setHours(9, 0, 0, 0);
+
   return {
     id,
-    title: `${scopeName}第${weekStart.isoWeek()}周运营诊断周报`,
+    title: `${scopeName}第${weekNum}周运营诊断周报`,
     period,
     weekStart: weekStartStr,
     weekEnd: weekEndStr,
-    generatedAt: weekEnd.add(1, 'day').hour(9).minute(0).toISOString(),
+    generatedAt: genDate.toISOString(),
     scope,
     scopeId,
     scopeName,
     content,
   };
 }
-
-const scopeNames: Record<ReportScope, string> = {
-  national: '全国',
-  city: '',
-  branch: '',
-};
 
 const allReports: Report[] = [];
 
@@ -208,7 +238,7 @@ for (let w = 0; w < 8; w++) {
   );
 }
 
-cities.slice(0, 4).forEach((city, ci) => {
+cities.slice(0, 4).forEach((city) => {
   for (let w = 0; w < 4; w++) {
     allReports.push(
       generateWeeklyReport(
@@ -222,7 +252,7 @@ cities.slice(0, 4).forEach((city, ci) => {
   }
 });
 
-branches.slice(0, 3).forEach((branch, bi) => {
+branches.slice(0, 3).forEach((branch) => {
   for (let w = 0; w < 3; w++) {
     allReports.push(
       generateWeeklyReport(
@@ -236,7 +266,7 @@ branches.slice(0, 3).forEach((branch, bi) => {
   }
 });
 
-allReports.sort((a, b) => dayjs(b.generatedAt).valueOf() - dayjs(a.generatedAt).valueOf());
+allReports.sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
 
 export const reports: Report[] = allReports;
 
