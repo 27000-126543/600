@@ -80,9 +80,9 @@ export const warnings: Warning[] = [
     currentLevel: 4,
     status: 'approved',
     approvals: [
-      { level: 1, approver: generateName(), comment: '已核实，需立即处理', approvedAt: now.subtract(4, 'hour').toISOString() },
-      { level: 2, approver: generateName(), comment: '同意，安排专项整改', approvedAt: now.subtract(3, 'hour').toISOString() },
-      { level: 3, approver: generateName(), comment: '批准，启动应急预案', approvedAt: now.subtract(2, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '已核实，需立即处理', approvedAt: now.subtract(4, 'hour').toISOString(), action: 'approve' },
+      { level: 2, approver: generateName(), comment: '同意，安排专项整改', approvedAt: now.subtract(3, 'hour').toISOString(), action: 'approve' },
+      { level: 3, approver: generateName(), comment: '批准，启动应急预案', approvedAt: now.subtract(2, 'hour').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -96,9 +96,9 @@ export const warnings: Warning[] = [
     currentLevel: 4,
     status: 'approved',
     approvals: [
-      { level: 1, approver: generateName(), comment: '情况属实', approvedAt: now.subtract(20, 'hour').toISOString() },
-      { level: 2, approver: generateName(), comment: '同意增开窗口', approvedAt: now.subtract(18, 'hour').toISOString() },
-      { level: 3, approver: generateName(), comment: '批准执行', approvedAt: now.subtract(16, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '情况属实', approvedAt: now.subtract(20, 'hour').toISOString(), action: 'approve' },
+      { level: 2, approver: generateName(), comment: '同意增开窗口', approvedAt: now.subtract(18, 'hour').toISOString(), action: 'approve' },
+      { level: 3, approver: generateName(), comment: '批准执行', approvedAt: now.subtract(16, 'hour').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -112,9 +112,9 @@ export const warnings: Warning[] = [
     currentLevel: 4,
     status: 'approved',
     approvals: [
-      { level: 1, approver: generateName(), comment: '已处理', approvedAt: now.subtract(1, 'day').toISOString() },
-      { level: 2, approver: generateName(), comment: '确认整改', approvedAt: now.subtract(1, 'day').add(2, 'hour').toISOString() },
-      { level: 3, approver: generateName(), comment: '同意结案', approvedAt: now.subtract(1, 'day').add(4, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '已处理', approvedAt: now.subtract(1, 'day').toISOString(), action: 'approve' },
+      { level: 2, approver: generateName(), comment: '确认整改', approvedAt: now.subtract(1, 'day').add(2, 'hour').toISOString(), action: 'approve' },
+      { level: 3, approver: generateName(), comment: '同意结案', approvedAt: now.subtract(1, 'day').add(4, 'hour').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -128,9 +128,9 @@ export const warnings: Warning[] = [
     currentLevel: 4,
     status: 'approved',
     approvals: [
-      { level: 1, approver: generateName(), comment: '已优化排班', approvedAt: now.subtract(2, 'day').toISOString() },
-      { level: 2, approver: generateName(), comment: '确认', approvedAt: now.subtract(2, 'day').add(1, 'hour').toISOString() },
-      { level: 3, approver: generateName(), comment: '通过', approvedAt: now.subtract(2, 'day').add(3, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '已优化排班', approvedAt: now.subtract(2, 'day').toISOString(), action: 'approve' },
+      { level: 2, approver: generateName(), comment: '确认', approvedAt: now.subtract(2, 'day').add(1, 'hour').toISOString(), action: 'approve' },
+      { level: 3, approver: generateName(), comment: '通过', approvedAt: now.subtract(2, 'day').add(3, 'hour').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -156,7 +156,8 @@ export const warnings: Warning[] = [
     currentLevel: 2,
     status: 'rejected',
     approvals: [
-      { level: 1, approver: generateName(), comment: '数据异常，暂不处理', approvedAt: now.subtract(5, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '已现场核实，问题属实，同意上报', approvedAt: now.subtract(5, 'hour').add(30, 'minute').toISOString(), action: 'approve' },
+      { level: 2, approver: generateName(), comment: '数据异常，经复查为临时活动导致，暂不处理', approvedAt: now.subtract(5, 'hour').toISOString(), action: 'reject' },
     ],
   },
   {
@@ -170,8 +171,8 @@ export const warnings: Warning[] = [
     currentLevel: 3,
     status: 'pending',
     approvals: [
-      { level: 1, approver: generateName(), comment: '确认问题存在', approvedAt: now.subtract(2, 'day').toISOString() },
-      { level: 2, approver: generateName(), comment: '同意整改方案', approvedAt: now.subtract(2, 'day').add(3, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '确认问题存在', approvedAt: now.subtract(2, 'day').toISOString(), action: 'approve' },
+      { level: 2, approver: generateName(), comment: '同意整改方案', approvedAt: now.subtract(2, 'day').add(3, 'hour').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -185,9 +186,9 @@ export const warnings: Warning[] = [
     currentLevel: 4,
     status: 'approved',
     approvals: [
-      { level: 1, approver: generateName(), comment: '已安排增援', approvedAt: now.subtract(3, 'day').toISOString() },
-      { level: 2, approver: generateName(), comment: '整改完成', approvedAt: now.subtract(2, 'day').toISOString() },
-      { level: 3, approver: generateName(), comment: '确认通过', approvedAt: now.subtract(2, 'day').add(2, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '已安排增援', approvedAt: now.subtract(3, 'day').toISOString(), action: 'approve' },
+      { level: 2, approver: generateName(), comment: '整改完成', approvedAt: now.subtract(2, 'day').toISOString(), action: 'approve' },
+      { level: 3, approver: generateName(), comment: '确认通过', approvedAt: now.subtract(2, 'day').add(2, 'hour').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -201,7 +202,7 @@ export const warnings: Warning[] = [
     currentLevel: 1,
     status: 'rejected',
     approvals: [
-      { level: 1, approver: generateName(), comment: '样本量不足，暂不触发', approvedAt: now.subtract(4, 'day').toISOString() },
+      { level: 1, approver: generateName(), comment: '样本量不足，仅3条评价，暂不触发预警', approvedAt: now.subtract(4, 'day').toISOString(), action: 'reject' },
     ],
   },
   {
@@ -227,7 +228,7 @@ export const warnings: Warning[] = [
     currentLevel: 2,
     status: 'pending',
     approvals: [
-      { level: 1, approver: generateName(), comment: '支行已确认', approvedAt: now.subtract(2, 'day').toISOString() },
+      { level: 1, approver: generateName(), comment: '支行已确认', approvedAt: now.subtract(2, 'day').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -253,7 +254,7 @@ export const warnings: Warning[] = [
     currentLevel: 2,
     status: 'pending',
     approvals: [
-      { level: 1, approver: generateName(), comment: '核实确认', approvedAt: now.subtract(1, 'day').toISOString() },
+      { level: 1, approver: generateName(), comment: '核实确认', approvedAt: now.subtract(1, 'day').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -267,9 +268,9 @@ export const warnings: Warning[] = [
     currentLevel: 4,
     status: 'approved',
     approvals: [
-      { level: 1, approver: generateName(), comment: '已调整午间排班', approvedAt: now.subtract(5, 'day').toISOString() },
-      { level: 2, approver: generateName(), comment: '确认', approvedAt: now.subtract(5, 'day').add(2, 'hour').toISOString() },
-      { level: 3, approver: generateName(), comment: '通过', approvedAt: now.subtract(5, 'day').add(4, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '已调整午间排班', approvedAt: now.subtract(5, 'day').toISOString(), action: 'approve' },
+      { level: 2, approver: generateName(), comment: '确认', approvedAt: now.subtract(5, 'day').add(2, 'hour').toISOString(), action: 'approve' },
+      { level: 3, approver: generateName(), comment: '通过', approvedAt: now.subtract(5, 'day').add(4, 'hour').toISOString(), action: 'approve' },
     ],
   },
   {
@@ -295,7 +296,7 @@ export const warnings: Warning[] = [
     currentLevel: 2,
     status: 'pending',
     approvals: [
-      { level: 1, approver: generateName(), comment: '确认高峰期问题', approvedAt: now.subtract(3, 'hour').toISOString() },
+      { level: 1, approver: generateName(), comment: '确认高峰期问题', approvedAt: now.subtract(3, 'hour').toISOString(), action: 'approve' },
     ],
   },
 ];

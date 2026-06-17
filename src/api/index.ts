@@ -133,6 +133,7 @@ export const approveWarning = (
     approver: userName || currentUser?.name || '未知',
     comment,
     approvedAt: new Date().toISOString(),
+    action,
   });
   if (action === 'reject') {
     warning.status = 'rejected';
